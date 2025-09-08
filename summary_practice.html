@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마무리 - Best Practice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: #FDFBF8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 1600px;
+            min-height: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .card { background-color: white; border: 1px solid #F3EADF; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        @media (max-width: 1600px) {
+            .main-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="main-container">
+        <div class="w-full px-8">
+        <main>
+            <div class="text-center mb-10">
+                <h1 class="text-4xl font-bold text-gray-900">마무리: Best Practice와 활용 전략</h1>
+            </div>
+
+            <div class="space-y-12">
+                <div class="card p-8">
+                    <h3 class="text-2xl font-bold mb-6 text-center">효과적인 활용을 위한 Best Practice</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-4">✅</span>
+                            <div>
+                                <h4 class="font-bold mb-1">다양한 평가 도구 혼합 사용</h4>
+                                <p class="text-gray-600">퀴즈로 기본 개념을 확인하고, 활동지로 심화 사고를 유도하세요.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-4">✅</span>
+                            <div>
+                                <h4 class="font-bold mb-1">단계별 난이도 조절</h4>
+                                <p class="text-gray-600">갈림길 활동을 활용해 학생 수준별 맞춤 콘텐츠를 제공하세요.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-4">✅</span>
+                            <div>
+                                <h4 class="font-bold mb-1">즉각적 피드백 제공</h4>
+                                <p class="text-gray-600">AI 자동 채점과 교사 피드백을 적절히 조합하여 활용하세요.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-4">✅</span>
+                            <div>
+                                <h4 class="font-bold mb-1">데이터 기반 수업 개선</h4>
+                                <p class="text-gray-600">분석 탭의 데이터를 활용해 수업을 지속적으로 개선하세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-8 rounded-lg text-center">
+                    <h3 class="text-2xl font-bold mb-4">연수를 마치며</h3>
+                    <p class="text-lg text-gray-700">코들의 다양한 기능을 활용하여 더 효과적이고 효율적인 수업을 만들어가세요.<br>선생님들의 창의적인 활용 사례를 기대합니다!</p>
+                </div>
+            </div>
+        </main>
+        </div>
+    </div>
+</body>
+</html>
