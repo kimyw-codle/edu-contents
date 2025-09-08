@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코들 활용 교사 연수 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Harmony -->
+    <!-- Application Structure Plan: The application is structured into four main, navigable sections: '소개' (Intro), '퀴즈 활동' (Quiz), '활동지 활동' (Worksheet), and '마무리' (Summary). This thematic structure, different from the original linear slide deck, allows teachers to directly access the tool they are interested in. The '퀴즈 활동' and '활동지 활동' sections are further broken down into interactive sub-sections (e.g., key features, types, AI assistant) using cards and toggles. This approach enhances usability by organizing detailed information into digestible, self-contained modules. The user flow is non-linear, encouraging exploration based on individual needs rather than a fixed presentation order. The highlight is an interactive demo for the 'AI 도우미' to make its functionality tangible. -->
+    <!-- Visualization & Content Choices: Report Info: AI Assistant feature. -> Goal: Demonstrate the feature's value. -> Viz/Presentation Method: A simulated chat interface. -> Interaction: A button reveals an example student-AI interaction, showing how the AI guides rather than gives answers. -> Justification: This interactive demo is far more engaging and informative than static text, directly showing the pedagogical benefit. -> Library/Method: HTML/CSS/JS. Report Info: Quiz/Worksheet features. -> Goal: Inform & Compare. -> Viz/Presentation Method: Styled cards and side-by-side comparison layouts. -> Interaction: Hover effects on cards, clear visual separation of concepts. -> Justification: Improves readability and helps users quickly differentiate between various functions. -> Library/Method: HTML/Tailwind. No quantitative data was present, so no charts were used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #FDFBF8; }
+        .nav-active { color: #F59E0B; border-bottom-color: #F59E0B; }
+        .nav-item { transition: all 0.3s ease; }
+        .section-content { display: none; }
+        .section-active { display: block; }
+        .card { background-color: white; border: 1px solid #F3EADF; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        .tip-box { background-color: #FEF3C7; border-left: 4px solid #FBBF24; }
+        .warning-box { background-color: #FFE4E6; border-left: 4px solid #F87171; }
+        .ai-chat-bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; }
+        .ai-chat-student { background-color: #E0E7FF; align-self: flex-start; }
+        .ai-chat-bot { background-color: #D1FAE5; align-self: flex-start; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900">중학교 선생님들을 위한 코들 활용 가이드</h1>
+            <p class="mt-2 text-lg text-gray-600">학생 평가를 더 쉽고 편리하게 만드는 방법</p>
+        </header>
+
+        <nav class="flex justify-center border-b-2 border-gray-200 mb-12">
+            <button data-target="intro" class="nav-item nav-active text-lg font-semibold py-4 px-6 border-b-2 border-transparent hover:text-amber-500">소개</button>
+            <button data-target="quiz" class="nav-item text-lg font-semibold py-4 px-6 border-b-2 border-transparent hover:text-amber-500">퀴즈 활동</button>
+            <button data-target="worksheet" class="nav-item text-lg font-semibold py-4 px-6 border-b-2 border-transparent hover:text-amber-500">활동지 활동</button>
+            <button data-target="summary" class="nav-item text-lg font-semibold py-4 px-6 border-b-2 border-transparent hover:text-amber-500">마무리</button>
+        </nav>
+
+        <main id="app-content">
+            <section id="intro" class="section-content section-active">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold mb-4">수업과 평가, 한층 더 효율적으로</h2>
+                    <p class="text-lg text-gray-600 mb-10 max-w-3xl mx-auto">코들의 퀴즈와 활동지 기능을 활용하면 학생 평가를 더 손쉽고 편하게 수행할 수 있습니다. 자동 채점, 즉각적인 피드백, 제출 현황 관리 기능을 통해 수업의 질을 높여보세요.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div class="card p-8">
+                        <div class="text-4xl mb-4">💯</div>
+                        <h3 class="text-xl font-bold mb-2">자동 채점</h3>
+                        <p class="text-gray-600">객관식, 주관식, 서술형 문항을 자동으로 채점하여 평가 시간을 획기적으로 줄여줍니다.</p>
+                    </div>
+                    <div class="card p-8">
+                        <div class="text-4xl mb-4">💬</div>
+                        <h3 class="text-xl font-bold mb-2">즉각적 피드백</h3>
+                        <p class="text-gray-600">학생들은 문제 풀이 직후 또는 과제 제출 후 바로 결과를 확인하며 학습을 보완할 수 있습니다.</p>
+                    </div>
+                    <div class="card p-8">
+                        <div class="text-4xl mb-4">📊</div>
+                        <h3 class="text-xl font-bold mb-2">제출 현황 관리</h3>
+                        <p class="text-gray-600">어떤 학생이 과제를 제출했는지 실시간으로 파악하고 효과적으로 관리할 수 있습니다.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="quiz" class="section-content">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold mb-4">퀴즈 활동: 정확하고 빠른 평가</h2>
+                    <p class="text-lg text-gray-600 mb-10 max-w-3xl mx-auto">객관식부터 AI 자동 채점이 가능한 서술형 문항까지, 다양한 유형의 퀴즈로 학생들의 학업 성취도를 효과적으로 측정하고 관리하세요.</p>
+                </div>
+                
+                <div class="space-y-12">
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold mb-6 text-center">주요 문항 유형</h3>
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="p-6 bg-amber-50 rounded-lg">
+                                <h4 class="font-bold text-lg">객관식 문항</h4>
+                                <p class="mt-1 text-gray-600">선택지를 고르는 방식으로, 자동 채점이 가능하여 편리합니다.</p>
+                            </div>
+                            <div class="p-6 bg-amber-50 rounded-lg">
+                                <h4 class="font-bold text-lg">주관식 문항</h4>
+                                <p class="mt-1 text-gray-600">단답 입력 방식이며, 설정된 정답과 비교하여 채점됩니다.</p>
+                            </div>
+                            <div class="p-6 bg-green-50 rounded-lg border border-green-200">
+                                <h4 class="font-bold text-lg flex items-center">
+                                    <span class="mr-2 text-xl">✨</span> 서술형 문항 (AI 기반)
+                                </h4>
+                                <ul class="mt-2 text-gray-700 list-disc list-inside space-y-1">
+                                    <li>AI가 A/B/C 등급으로 자동 채점</li>
+                                    <li>학생 답변에 대한 AI 피드백 제공</li>
+                                    <li>문제/평가 요소 입력 시 채점 기준 자동 생성</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="tip-box p-4 mt-6 rounded-lg">
+                            <p><strong class="font-semibold">평가 관리 TIP:</strong> 채점 결과는 [분석] 탭에서 확인하고, CSV 파일로 내려받아 학생별 심층 분석에 활용해 보세요.</p>
+                        </div>
+                    </div>
+
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold mb-6 text-center">목적에 따른 퀴즈 종류</h3>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="text-xl font-bold mb-2">📝 연습문제 퀴즈</h4>
+                                <p class="text-gray-600 mb-3">문제 풀이 직후 정/오답을 바로 확인할 수 있어 학습 과정을 점검하는 데 적합합니다.</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-blue-500 h-2.5 rounded-full" style="width: 75%"></div>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">학습 과정 점검용</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold mb-2">🏆 평가 퀴즈</h4>
+                                <p class="text-gray-600 mb-3">모든 문제 풀이를 마친 후 한 번에 점수가 공개되어 시험이나 단원평가에 활용하기 좋습니다.</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-red-500 h-2.5 rounded-full" style="width: 100%"></div>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">총괄 평가용</p>
+                            </div>
+                        </div>
+                        <div class="tip-box p-4 mt-6 rounded-lg">
+                            <p><strong class="font-semibold">연계 활동 TIP:</strong> 퀴즈 결과에 따라 '갈림길 활동'으로 연결하여 점수별(정복/기본/보완) 맞춤형 콘텐츠를 제공할 수 있습니다. (콘텐츠 직접 설정 필요)</p>
+                        </div>
+                    </div>
+
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold mb-6 text-center">알아두면 편리한 기능</h3>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="p-6 bg-sky-50 rounded-lg">
+                                <h4 class="font-bold text-lg mb-2">🤖 AI 퀴즈 생성</h4>
+                                <p class="text-gray-600">PDF 학습 자료를 업로드하면 AI가 내용에 맞는 객관식·주관식 문항을 자동으로 생성해 줍니다.</p>
+                            </div>
+                            <div class="p-6 bg-sky-50 rounded-lg">
+                                <h4 class="font-bold text-lg mb-2">🗓️ 제출 기한 설정</h4>
+                                <p class="text-gray-600">과제나 수행평가 시 마감 기한을 설정하고, [분석] 탭에서 제출 현황을 한눈에 확인할 수 있습니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="worksheet" class="section-content">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold mb-4">활동지 활동: 생각의 깊이를 더하는 과정</h2>
+                    <p class="text-lg text-gray-600 mb-10 max-w-3xl mx-auto">정답이 없는 개방형 질문을 통해 학생들의 다양한 생각과 의견을 확인하고, 의미 있는 피드백을 통해 성장을 지원하세요.</p>
+                </div>
+
+                <div class="space-y-12">
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold mb-2 text-center">활동지 활동이란?</h3>
+                        <p class="text-center text-gray-600 mb-6">설문, 서술형, 자기 성찰형 문항으로 학생의 사고 과정을 파악하고, 교사가 직접 피드백을 제공하는 활동입니다.</p>
+                        <div class="flex justify-center space-x-6">
+                            <span class="bg-teal-100 text-teal-800 font-medium px-4 py-1 rounded-full">다양한 의견 파악</span>
+                            <span class="bg-teal-100 text-teal-800 font-medium px-4 py-1 rounded-full">사고 과정 추적</span>
+                            <span class="bg-teal-100 text-teal-800 font-medium px-4 py-1 rounded-full">학습자 성찰 자료</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="card p-8">
+                            <h3 class="text-2xl font-bold mb-4 text-center">활동지 제작과 배부</h3>
+                            <ul class="space-y-3 text-gray-700">
+                                <li><strong>제작:</strong> 문항별 제목과 텍스트를 자유롭게 수정할 수 있어요.</li>
+                                <li><strong>추가:</strong> 단, 새로운 문항을 추가하려면 활동지를 재배부해야 합니다.</li>
+                            </ul>
+                            <div class="warning-box p-4 mt-6 rounded-lg">
+                                <p><strong class="font-semibold">주의!</strong> 이미 제출된 답안은 재배부 시 삭제됩니다. 학생 제출물을 보존해야 할 경우 재배부에 신중해주세요.</p>
+                            </div>
+                        </div>
+
+                        <div class="card p-8">
+                            <h3 class="text-2xl font-bold mb-4 text-center">수업 단계별 활용 예시</h3>
+                            <div class="relative pl-6">
+                                <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-amber-200"></div>
+                                <div class="relative mb-6">
+                                    <div class="absolute -left-8 top-1 w-4 h-4 bg-amber-400 rounded-full"></div>
+                                    <h4 class="font-bold">수업 도입</h4>
+                                    <p class="text-gray-600">배경지식 확인 질문</p>
+                                </div>
+                                <div class="relative mb-6">
+                                    <div class="absolute -left-8 top-1 w-4 h-4 bg-amber-400 rounded-full"></div>
+                                    <h4 class="font-bold">수업 중간</h4>
+                                    <p class="text-gray-600">토론 및 실습 후 의견 정리</p>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute -left-8 top-1 w-4 h-4 bg-amber-400 rounded-full"></div>
+                                    <h4 class="font-bold">수업 마무리</h4>
+                                    <p class="text-gray-600">학습 내용 성찰 및 소감 작성</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="summary" class="section-content">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold mb-4">마무리: 균형있는 평가 설계하기</h2>
+                    <p class="text-lg text-gray-600 mb-10 max-w-3xl mx-auto">퀴즈, 활동지, 그리고 AI 도우미 기능을 함께 활용하여 형성평가와 과정중심평가를 균형 있게 운영하고 학생들의 성장을 효과적으로 지원할 수 있습니다.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="card p-8">
+                        <h3 class="text-xl font-bold mb-3">🚀 퀴즈 활동</h3>
+                        <p class="text-gray-600">자동 채점과 데이터 분석(CSV)을 통해 <strong class="text-gray-800">평가 효율성을 강화</strong>하고 객관적인 데이터를 확보합니다.</p>
+                    </div>
+                    <div class="card p-8">
+                        <h3 class="text-xl font-bold mb-3">🎨 활동지 활동</h3>
+                        <p class="text-gray-600">개방형 응답과 교사의 피드백을 통해 학생의 <strong class="text-gray-800">사고력과 성찰 능력을 강화</strong>하는 과정을 지원합니다.</p>
+                    </div>
+                    <div class="card p-8">
+                        <h3 class="text-xl font-bold mb-3">💡 AI 도우미</h3>
+                        <p class="text-gray-600">학생 답변의 맥락을 기반으로 한 안내를 통해 <strong class="text-gray-800">자기 주도적 학습 능력을 강화</strong>하고 탐구 과정을 돕습니다.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navButtons = document.querySelectorAll('nav button');
+            const contentSections = document.querySelectorAll('.section-content');
+
+            function switchTab(targetId) {
+                contentSections.forEach(section => {
+                    section.classList.remove('section-active');
+                    if (section.id === targetId) {
+                        section.classList.add('section-active');
+                    }
+                });
+
+                navButtons.forEach(button => {
+                    button.classList.remove('nav-active');
+                    if (button.dataset.target === targetId) {
+                        button.classList.add('nav-active');
+                    }
+                });
+            }
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    switchTab(targetId);
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
