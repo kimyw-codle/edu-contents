@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코들 활용 교사 연수 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: #FDFBF8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 1600px;
+            min-height: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .card { background-color: white; border: 1px solid #F3EADF; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        @media (max-width: 1600px) {
+            .main-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="main-container">
+        <div class="w-full">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900">중학교 선생님들을 위한 코들 활용 가이드</h1>
+            <p class="mt-2 text-lg text-gray-600">학생 평가를 더 쉽고 편리하게 만드는 방법</p>
+        </header>
+
+        <div class="text-center mb-10">
+            <p class="text-xl text-gray-700 mb-8">코들 플랫폼을 활용한 효과적인 학생 평가 방법을 단계별로 알아보세요</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <a href="intro.html" class="card p-8 text-center hover:bg-amber-50 cursor-pointer">
+                <div class="text-5xl mb-4">📖</div>
+                <h2 class="text-2xl font-bold mb-2">1. 소개</h2>
+                <p class="text-gray-600">코들의 주요 기능과 수업 활용 가능성을 알아봅니다</p>
+            </a>
+
+            <a href="quiz.html" class="card p-8 text-center hover:bg-blue-50 cursor-pointer">
+                <div class="text-5xl mb-4">📝</div>
+                <h2 class="text-2xl font-bold mb-2">2. 퀴즈 활동</h2>
+                <p class="text-gray-600">자동 채점이 가능한 다양한 퀴즈 유형을 살펴봅니다</p>
+            </a>
+
+            <a href="worksheet.html" class="card p-8 text-center hover:bg-green-50 cursor-pointer">
+                <div class="text-5xl mb-4">📋</div>
+                <h2 class="text-2xl font-bold mb-2">3. 활동지 활동</h2>
+                <p class="text-gray-600">개방형 질문과 피드백을 통한 과정중심평가를 배웁니다</p>
+            </a>
+
+            <a href="summary.html" class="card p-8 text-center hover:bg-purple-50 cursor-pointer">
+                <div class="text-5xl mb-4">🎯</div>
+                <h2 class="text-2xl font-bold mb-2">4. 마무리</h2>
+                <p class="text-gray-600">균형잡힌 평가 설계를 위한 종합 가이드를 확인합니다</p>
+            </a>
+        </div>
+
+        <div class="mt-12 text-center">
+            <p class="text-gray-600">원하시는 섹션을 클릭하여 상세 내용을 확인하세요</p>
+        </div>
+        </div>
+    </div>
+</body>
+</html>

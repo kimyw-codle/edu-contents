@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소개 - 코들 활용 교사 연수 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: #FDFBF8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 1600px;
+            min-height: 1000px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .nav-active { color: #F59E0B; border-bottom-color: #F59E0B; }
+        .card { background-color: white; border: 1px solid #F3EADF; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        @media (max-width: 1600px) {
+            .main-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="main-container">
+        <div class="w-full px-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900">중학교 선생님들을 위한 코들 활용 가이드</h1>
+            <p class="mt-2 text-lg text-gray-600">학생 평가를 더 쉽고 편리하게 만드는 방법</p>
+        </header>
+
+        <main>
+            <div class="text-center">
+                <h2 class="text-3xl font-bold mb-4">수업과 평가, 한층 더 효율적으로</h2>
+                <p class="text-lg text-gray-600 mb-10 max-w-3xl mx-auto">코들의 퀴즈와 활동지 기능을 활용하면 학생 평가를 더 손쉽고 편하게 수행할 수 있습니다. 자동 채점, 즉각적인 피드백, 제출 현황 관리 기능을 통해 수업의 질을 높여보세요.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8 text-center mb-12">
+                <div class="card p-8">
+                    <div class="text-4xl mb-4">💯</div>
+                    <h3 class="text-xl font-bold mb-2">자동 채점</h3>
+                    <p class="text-gray-600">객관식, 주관식, 서술형 문항을 자동으로 채점하여 평가 시간을 획기적으로 줄여줍니다.</p>
+                </div>
+                <div class="card p-8">
+                    <div class="text-4xl mb-4">💬</div>
+                    <h3 class="text-xl font-bold mb-2">즉각적 피드백</h3>
+                    <p class="text-gray-600">학생들은 문제 풀이 직후 또는 과제 제출 후 바로 결과를 확인하며 학습을 보완할 수 있습니다.</p>
+                </div>
+                <div class="card p-8">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h3 class="text-xl font-bold mb-2">제출 현황 관리</h3>
+                    <p class="text-gray-600">어떤 학생이 과제를 제출했는지 실시간으로 파악하고 효과적으로 관리할 수 있습니다.</p>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 p-8 rounded-lg mb-12">
+                <h3 class="text-2xl font-bold mb-4 text-center">코들이 제공하는 핵심 가치</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">⏱️ 시간 절약</h4>
+                        <p class="text-gray-700">자동 채점과 데이터 분석 기능으로 평가에 소요되는 시간을 대폭 줄일 수 있습니다.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">🎯 맞춤형 학습</h4>
+                        <p class="text-gray-700">학생별 성취도를 파악하고 개별 맞춤형 피드백을 제공할 수 있습니다.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">📈 데이터 기반 평가</h4>
+                        <p class="text-gray-700">체계적인 데이터 수집과 분석으로 객관적인 평가가 가능합니다.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">🤝 학생 참여 증진</h4>
+                        <p class="text-gray-700">즉각적인 피드백과 다양한 활동으로 학생들의 적극적인 참여를 유도합니다.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+        </div>
+    </div>
+</body>
+</html>
