@@ -1,0 +1,39 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env files
+.env*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# vercel
+.vercel
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+
+# misc
+*.pem
+
+# claude code local settings
+.claude/settings.local.json
+
+# 민감한 이미지 (계약서, 개인정보 등) - 배포 제외
+/public/buying_home_project/contract/
