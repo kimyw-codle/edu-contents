@@ -23,7 +23,7 @@ export default function BuyingHomeLayout({ children }: { children: React.ReactNo
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             <Link href="/buying-home" className="font-bold text-lg text-gray-900">
-              입주 프로젝트
+              입주 성공 기원 프로젝트
             </Link>
             <div className="text-sm text-gray-500">
               D{dday > 0 ? `-${dday}` : dday === 0 ? '-Day' : `+${Math.abs(dday)}`}
