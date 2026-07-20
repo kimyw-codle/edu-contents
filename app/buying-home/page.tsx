@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSupabaseTable } from './_lib/store';
 import { CATEGORY_LABELS, CATEGORY_COLORS, type Task, type TaskCategory, type BudgetExpense, type FundSource } from './_lib/types';
 import { getDDay, formatMoneyWon, formatDateFull, daysUntil, isOverdue } from './_lib/utils';
+import MonthlyCalendar from './_components/MonthlyCalendar';
 
 export default function DashboardPage() {
   const { data: tasks, loaded: tasksLoaded } = useSupabaseTable<Task>('tasks', 'deadline');
@@ -92,7 +93,8 @@ export default function DashboardPage() {
               const days = daysUntil(task.deadline);
               const overdue = isOverdue(task.deadline);
               return (
-                <div key={task.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <Link key={task.id} href={`/buying-home/tasks?taskId=${task.id}`}
+                  className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded px-1 -mx-1 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORY_COLORS[task.category]}`}>
                       {CATEGORY_LABELS[task.category]}
@@ -102,7 +104,7 @@ export default function DashboardPage() {
                   <span className={`text-xs whitespace-nowrap ml-2 ${overdue ? 'text-red-600 font-bold' : days <= 7 ? 'text-amber-600' : 'text-gray-400'}`}>
                     {overdue ? `${Math.abs(days)}일 지남` : days === 0 ? '오늘' : `${days}일 남음`}
                   </span>
-                </div>
+                </Link>
               );
             })}
             {urgentTasks.length === 0 && (
@@ -111,6 +113,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <MonthlyCalendar tasks={tasks} compact />
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">카테고리별 진행률</h2>

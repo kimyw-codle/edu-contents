@@ -67,4 +67,6 @@ export const CATEGORY_BAR_COLORS: Record<TaskCategory, string> = {
 
 export const GALLERY_CATEGORIES = ['전체', '계약', '인테리어', '가전', '기타'] as const;
 
+export const INTERIOR_SUBCATEGORIES = ['전체', '부엌', '욕실', '현관', '거실', '방'] as const;
+
 export const MOVE_IN_DATE = '2026-10-27';

@@ -2,19 +2,62 @@
 
 import { useState, useRef } from 'react';
 import { useSupabaseTable, uploadToStorage, deleteFromStorage, getStorageUrl } from '../_lib/store';
-import { GALLERY_CATEGORIES, type GalleryImage } from '../_lib/types';
+import { GALLERY_CATEGORIES, INTERIOR_SUBCATEGORIES, type GalleryImage } from '../_lib/types';
 import { formatDateFull, generateId } from '../_lib/utils';
+
+// 인테리어 세부 카테고리 포함 전체 카테고리 목록 (카테고리 변경 드롭다운용)
+function getAllCategoryOptions(): string[] {
+  const options: string[] = [];
+  for (const cat of GALLERY_CATEGORIES) {
+    if (cat === '전체') continue;
+    if (cat === '인테리어') {
+      options.push('인테리어');
+      for (const sub of INTERIOR_SUBCATEGORIES) {
+        if (sub === '전체') continue;
+        options.push(`인테리어/${sub}`);
+      }
+    } else {
+      options.push(cat);
+    }
+  }
+  return options;
+}
+
+function getCategoryDisplay(category: string): string {
+  if (category.startsWith('인테리어/')) {
+    return category; // "인테리어/부엌" 그대로
+  }
+  return category;
+}
 
 export default function GalleryPage() {
   const { data: images, loaded, upsertItem, removeItem } = useSupabaseTable<GalleryImage>('gallery_images', 'created_at');
   const [activeCategory, setActiveCategory] = useState<string>('전체');
+  const [activeSubCategory, setActiveSubCategory] = useState<string>('전체');
   const [viewingImage, setViewingImage] = useState<GalleryImage | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!loaded) return <div className="text-center py-20 text-gray-400">로딩 중...</div>;
 
-  const filteredImages = activeCategory === '전체' ? images : images.filter(img => img.category === activeCategory);
+  // 인테리어 관련 이미지 필터링 (인테리어 또는 인테리어/* 모두 포함)
+  const isInteriorImage = (img: GalleryImage) => img.category === '인테리어' || img.category.startsWith('인테리어/');
+
+  const filteredImages = (() => {
+    if (activeCategory === '전체') return images;
+    if (activeCategory === '인테리어') {
+      const interiorImages = images.filter(isInteriorImage);
+      if (activeSubCategory === '전체') return interiorImages;
+      return interiorImages.filter(img => img.category === `인테리어/${activeSubCategory}`);
+    }
+    return images.filter(img => img.category === activeCategory);
+  })();
+
+  // 인테리어 세부 카테고리별 카운트
+  const interiorSubCounts = (sub: string) => {
+    if (sub === '전체') return images.filter(isInteriorImage).length;
+    return images.filter(img => img.category === `인테리어/${sub}`).length;
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -28,9 +71,19 @@ export default function GalleryPage() {
 
       const publicUrl = await uploadToStorage(file, storagePath);
       if (publicUrl) {
+        // 현재 선택된 카테고리/서브카테고리에 맞게 자동 설정
+        let category: string;
+        if (activeCategory === '인테리어' && activeSubCategory !== '전체') {
+          category = `인테리어/${activeSubCategory}`;
+        } else if (activeCategory === '전체') {
+          category = '기타';
+        } else {
+          category = activeCategory;
+        }
+
         const newImage: GalleryImage = {
           id,
-          category: activeCategory === '전체' ? '기타' : activeCategory,
+          category,
           name: file.name.replace(/\.[^.]+$/, ''),
           storagePath,
           uploadDate: new Date().toISOString().split('T')[0],
@@ -60,6 +113,8 @@ export default function GalleryPage() {
     return '';
   };
 
+  const allCategoryOptions = getAllCategoryOptions();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -74,14 +129,27 @@ export default function GalleryPage() {
         <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleUpload} className="hidden" />
       </div>
 
+      {/* 메인 카테고리 */}
       <div className="flex gap-1 flex-wrap">
         {GALLERY_CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setActiveCategory(cat)}
+          <button key={cat} onClick={() => { setActiveCategory(cat); setActiveSubCategory('전체'); }}
             className={`px-3 py-1.5 text-sm rounded-full transition-colors ${activeCategory === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-            {cat} ({cat === '전체' ? images.length : images.filter(img => img.category === cat).length})
+            {cat} ({cat === '전체' ? images.length : cat === '인테리어' ? images.filter(isInteriorImage).length : images.filter(img => img.category === cat).length})
           </button>
         ))}
       </div>
+
+      {/* 인테리어 세부 카테고리 */}
+      {activeCategory === '인테리어' && (
+        <div className="flex gap-1 flex-wrap pl-2 border-l-2 border-amber-300">
+          {INTERIOR_SUBCATEGORIES.map(sub => (
+            <button key={sub} onClick={() => setActiveSubCategory(sub)}
+              className={`px-2.5 py-1 text-xs rounded-full transition-colors ${activeSubCategory === sub ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}`}>
+              {sub} ({interiorSubCounts(sub)})
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {filteredImages.map(image => (
@@ -90,7 +158,7 @@ export default function GalleryPage() {
             <img src={getImageSrc(image)} alt={image.name} className="w-full h-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
               <p className="text-white text-sm font-medium truncate">{image.name}</p>
-              <p className="text-white/70 text-xs">{image.category} / {formatDateFull(image.uploadDate)}</p>
+              <p className="text-white/70 text-xs">{getCategoryDisplay(image.category)} / {formatDateFull(image.uploadDate)}</p>
             </div>
           </div>
         ))}
@@ -105,13 +173,13 @@ export default function GalleryPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-white font-medium">{viewingImage.name}</h3>
-                <p className="text-white/50 text-sm">{viewingImage.category} / {formatDateFull(viewingImage.uploadDate)}</p>
+                <p className="text-white/50 text-sm">{getCategoryDisplay(viewingImage.category)} / {formatDateFull(viewingImage.uploadDate)}</p>
               </div>
               <div className="flex items-center gap-3">
                 <select value={viewingImage.category}
                   onChange={e => handleCategoryChange(viewingImage, e.target.value)}
                   className="text-sm bg-white/10 text-white border border-white/20 rounded px-2 py-1">
-                  {GALLERY_CATEGORIES.filter(c => c !== '전체').map(cat => (
+                  {allCategoryOptions.map(cat => (
                     <option key={cat} value={cat} className="text-black">{cat}</option>
                   ))}
                 </select>

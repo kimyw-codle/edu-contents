@@ -1,11 +1,89 @@
 'use client';
 
-import { useState } from 'react';
-import { useSupabaseTable } from '../_lib/store';
-import { CATEGORY_LABELS, CATEGORY_COLORS, type Task, type TaskCategory } from '../_lib/types';
+import { useState, useEffect, useRef, Fragment } from 'react';
+import { useSupabaseTable, uploadToStorage, deleteFromStorage, getStorageUrl } from '../_lib/store';
+import { CATEGORY_LABELS, CATEGORY_COLORS, type Task, type TaskCategory, type GalleryImage } from '../_lib/types';
 import { formatMoneyWon, formatDateFull, daysUntil, isOverdue, generateId } from '../_lib/utils';
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_LABELS) as TaskCategory[];
+
+const TASK_TO_GALLERY_CATEGORY: Record<string, string> = {
+  contract: '계약',
+  interior: '인테리어',
+  appliance: '가전',
+};
+
+// 간단한 마크다운 렌더링
+function MarkdownText({ text }: { text: string }) {
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1 text-sm text-gray-600 leading-relaxed">
+      {lines.map((line, i) => {
+        if (!line.trim()) return <div key={i} className="h-2" />;
+        const isList = line.trim().startsWith('- ');
+        const content = isList ? line.trim().slice(2) : line;
+        const rendered = renderInline(content);
+        if (isList) {
+          return (
+            <div key={i} className="flex items-start gap-2 ml-1">
+              <span className="text-gray-400 mt-0.5">&#8226;</span>
+              <span>{rendered}</span>
+            </div>
+          );
+        }
+        return <p key={i}>{rendered}</p>;
+      })}
+    </div>
+  );
+}
+
+function renderInline(text: string): React.ReactNode[] {
+  // **bold**, *italic*, [link](url) 처리
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    // Bold
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+    // Italic
+    const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
+    // Link
+    const linkMatch = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/);
+
+    const matches = [
+      boldMatch ? { type: 'bold', match: boldMatch, index: boldMatch.index! } : null,
+      italicMatch ? { type: 'italic', match: italicMatch, index: italicMatch.index! } : null,
+      linkMatch ? { type: 'link', match: linkMatch, index: linkMatch.index! } : null,
+    ].filter(Boolean).sort((a, b) => a!.index - b!.index);
+
+    if (matches.length === 0) {
+      parts.push(<Fragment key={key++}>{remaining}</Fragment>);
+      break;
+    }
+
+    const first = matches[0]!;
+    if (first.index > 0) {
+      parts.push(<Fragment key={key++}>{remaining.slice(0, first.index)}</Fragment>);
+    }
+
+    if (first.type === 'bold') {
+      parts.push(<strong key={key++} className="font-semibold text-gray-800">{first.match[1]}</strong>);
+    } else if (first.type === 'italic') {
+      parts.push(<em key={key++}>{first.match[1]}</em>);
+    } else if (first.type === 'link') {
+      parts.push(
+        <a key={key++} href={first.match[2]} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+          {first.match[1]}
+        </a>
+      );
+    }
+
+    remaining = remaining.slice(first.index + first.match[0].length);
+  }
+
+  return parts;
+}
 
 function TaskForm({ task, onSave, onCancel }: {
   task?: Task;
@@ -34,8 +112,8 @@ function TaskForm({ task, onSave, onCancel }: {
         <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="할 일 제목" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">설명 (선택)</label>
-        <textarea value={form.description ?? ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="상세 설명" rows={2} className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none" />
+        <label className="block text-xs text-gray-500 mb-1">설명 (마크다운 지원: **굵게**, *기울임*, - 목록, [링크](URL))</label>
+        <textarea value={form.description ?? ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="상세 설명을 입력하세요&#10;줄바꿈이 그대로 적용됩니다" rows={5} className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-y font-mono" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -57,11 +135,21 @@ function TaskForm({ task, onSave, onCancel }: {
   );
 }
 
-function TaskDetail({ task, onToggle, onEdit, onDelete, onClose }: {
-  task: Task; onToggle: () => void; onEdit: () => void; onDelete: () => void; onClose: () => void;
+function TaskDetail({ task, taskImages, onToggle, onEdit, onDelete, onClose, onImageUpload, onImageRemove }: {
+  task: Task;
+  taskImages: GalleryImage[];
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+  onImageUpload: (files: FileList) => void;
+  onImageRemove: (imageId: string) => void;
 }) {
   const days = daysUntil(task.deadline);
   const overdue = isOverdue(task.deadline) && !task.completed;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [viewingImage, setViewingImage] = useState<GalleryImage | null>(null);
+
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between">
@@ -70,8 +158,35 @@ function TaskDetail({ task, onToggle, onEdit, onDelete, onClose }: {
       </div>
       <div>
         <h2 className={`text-xl font-bold ${task.completed ? 'line-through text-gray-400' : 'text-gray-900'}`}>{task.title}</h2>
-        {task.description && <p className="text-sm text-gray-500 mt-2 leading-relaxed">{task.description}</p>}
+        {task.description && (
+          <div className="mt-3">
+            <MarkdownText text={task.description} />
+          </div>
+        )}
       </div>
+
+      {/* 첨부 이미지 */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">첨부 이미지 ({taskImages.length})</span>
+          <button onClick={() => fileInputRef.current?.click()} className="text-xs text-blue-600 hover:text-blue-800">+ 이미지 첨부</button>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={e => e.target.files && onImageUpload(e.target.files)} className="hidden" />
+        </div>
+        {taskImages.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {taskImages.map(img => (
+              <div key={img.id} className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer" onClick={() => setViewingImage(img)}>
+                <img src={getStorageUrl(img.storagePath!)} alt={img.name} className="w-full h-full object-cover" />
+                <button
+                  onClick={e => { e.stopPropagation(); onImageRemove(img.id); }}
+                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >x</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="space-y-3">
         <div className="flex items-center justify-between py-2 border-b border-gray-100">
           <span className="text-sm text-gray-500">상태</span>
@@ -107,16 +222,41 @@ function TaskDetail({ task, onToggle, onEdit, onDelete, onClose }: {
         <button onClick={onEdit} className="flex-1 px-4 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">수정</button>
         <button onClick={onDelete} className="px-4 py-2.5 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50">삭제</button>
       </div>
+
+      {/* 이미지 전체보기 모달 */}
+      {viewingImage && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" onClick={() => setViewingImage(null)}>
+          <div className="max-w-3xl w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-white text-sm">{viewingImage.name}</span>
+              <button onClick={() => setViewingImage(null)} className="text-white/70 hover:text-white text-2xl">x</button>
+            </div>
+            <img src={getStorageUrl(viewingImage.storagePath!)} alt={viewingImage.name} className="w-full rounded-lg" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function TasksPage() {
   const { data: tasks, loaded, upsertItem, updateItem, removeItem } = useSupabaseTable<Task>('tasks', 'deadline');
+  const { data: galleryImages, upsertItem: upsertGalleryImage, removeItem: removeGalleryImage } = useSupabaseTable<GalleryImage>('gallery_images', 'created_at');
   const [activeCategory, setActiveCategory] = useState<TaskCategory | 'all'>('all');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // URL에서 taskId 파라미터 읽어서 자동 선택
+  useEffect(() => {
+    if (!loaded) return;
+    const params = new URLSearchParams(window.location.search);
+    const taskId = params.get('taskId');
+    if (taskId) {
+      setSelectedTaskId(taskId);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [loaded]);
 
   if (!loaded) return <div className="text-center py-20 text-gray-400">로딩 중...</div>;
 
@@ -145,6 +285,50 @@ export default function TasksPage() {
     }
   };
 
+  const getTaskImages = (taskId: string) => {
+    return galleryImages.filter(img => img.relatedTaskIds?.includes(taskId));
+  };
+
+  const handleImageUpload = async (files: FileList, taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    for (const file of Array.from(files)) {
+      const id = generateId();
+      const ext = file.name.split('.').pop();
+      const storagePath = `${id}.${ext}`;
+      const publicUrl = await uploadToStorage(file, storagePath);
+      if (publicUrl) {
+        const galleryCat = TASK_TO_GALLERY_CATEGORY[task?.category ?? ''] ?? '기타';
+        const newImage: GalleryImage = {
+          id,
+          category: galleryCat,
+          name: file.name.replace(/\.[^.]+$/, ''),
+          storagePath,
+          uploadDate: new Date().toISOString().split('T')[0],
+          relatedTaskIds: [taskId],
+        };
+        await upsertGalleryImage(newImage);
+      }
+    }
+  };
+
+  const handleImageRemove = async (imageId: string) => {
+    if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
+    const img = galleryImages.find(i => i.id === imageId);
+    if (img?.storagePath) await deleteFromStorage(img.storagePath);
+    await removeGalleryImage(imageId);
+  };
+
+  const detailProps = selectedTask ? {
+    task: selectedTask,
+    taskImages: getTaskImages(selectedTask.id),
+    onToggle: () => toggleComplete(selectedTask.id),
+    onEdit: () => { setEditingId(selectedTask.id); setSelectedTaskId(null); },
+    onDelete: () => deleteTask(selectedTask.id),
+    onClose: () => setSelectedTaskId(null),
+    onImageUpload: (files: FileList) => handleImageUpload(files, selectedTask.id),
+    onImageRemove: handleImageRemove,
+  } : null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -152,12 +336,12 @@ export default function TasksPage() {
         <button onClick={() => { setShowAddForm(true); setEditingId(null); setSelectedTaskId(null); }} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800">+ 추가</button>
       </div>
 
-      <div className="flex gap-1 flex-wrap">
-        <button onClick={() => setActiveCategory('all')} className={`px-3 py-1.5 text-sm rounded-full transition-colors ${activeCategory === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+      <div className="flex gap-1 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+        <button onClick={() => setActiveCategory('all')} className={`px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap shrink-0 ${activeCategory === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
           전체 ({tasks.length})
         </button>
         {ALL_CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-3 py-1.5 text-sm rounded-full transition-colors ${activeCategory === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap shrink-0 ${activeCategory === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
             {CATEGORY_LABELS[cat]} ({tasks.filter(t => t.category === cat).length})
           </button>
         ))}
@@ -197,24 +381,20 @@ export default function TasksPage() {
           {sortedTasks.length === 0 && <p className="text-center py-10 text-gray-400">할 일이 없습니다.</p>}
         </div>
 
-        {selectedTask && (
+        {detailProps && (
           <div className="hidden md:block md:w-3/5">
             <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-24">
-              <TaskDetail task={selectedTask} onToggle={() => toggleComplete(selectedTask.id)}
-                onEdit={() => { setEditingId(selectedTask.id); setSelectedTaskId(null); }}
-                onDelete={() => deleteTask(selectedTask.id)} onClose={() => setSelectedTaskId(null)} />
+              <TaskDetail {...detailProps} />
             </div>
           </div>
         )}
       </div>
 
-      {selectedTask && (
+      {detailProps && (
         <div className="fixed inset-0 bg-black/50 z-50 md:hidden" onClick={() => setSelectedTaskId(null)}>
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] overflow-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-            <TaskDetail task={selectedTask} onToggle={() => toggleComplete(selectedTask.id)}
-              onEdit={() => { setEditingId(selectedTask.id); setSelectedTaskId(null); }}
-              onDelete={() => deleteTask(selectedTask.id)} onClose={() => setSelectedTaskId(null)} />
+            <TaskDetail {...detailProps} />
           </div>
         </div>
       )}
