@@ -255,21 +255,36 @@ function TaskDetail({ task, taskImages, onUpdate, onToggle, onDelete, onClose, o
       {/* 첨부 이미지 */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">첨부 이미지 ({taskImages.length})</span>
-          <button onClick={() => fileInputRef.current?.click()} className="text-xs text-blue-600 hover:text-blue-800">+ 이미지 첨부</button>
-          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={e => e.target.files && onImageUpload(e.target.files)} className="hidden" />
+          <span className="text-sm font-medium text-gray-700">첨부 파일 ({taskImages.length})</span>
+          <button onClick={() => fileInputRef.current?.click()} className="text-xs text-blue-600 hover:text-blue-800">+ 파일 첨부</button>
+          <input ref={fileInputRef} type="file" multiple onChange={e => e.target.files && onImageUpload(e.target.files)} className="hidden" />
         </div>
         {taskImages.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
-            {taskImages.map(img => (
-              <div key={img.id} className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer" onClick={() => setViewingIndex(taskImages.indexOf(img))}>
-                <img src={getStorageUrl(img.storagePath!)} alt={img.name} className="w-full h-full object-cover" />
-                <button
-                  onClick={e => { e.stopPropagation(); onImageRemove(img.id); }}
-                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                >x</button>
-              </div>
-            ))}
+            {taskImages.map((img, idx) => {
+              const isImage = /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(img.storagePath ?? '');
+              return isImage ? (
+                <div key={img.id} className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer" onClick={() => setViewingIndex(idx)}>
+                  <img src={getStorageUrl(img.storagePath!)} alt={img.name} className="w-full h-full object-cover" />
+                  <button
+                    onClick={e => { e.stopPropagation(); onImageRemove(img.id); }}
+                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >x</button>
+                </div>
+              ) : (
+                <div key={img.id} className="group relative aspect-square rounded-lg border border-gray-200 flex flex-col items-center justify-center p-2 bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <a href={getStorageUrl(img.storagePath!)} target="_blank" rel="noopener noreferrer" className="text-center">
+                    <div className="text-2xl mb-1">📄</div>
+                    <p className="text-[10px] text-gray-600 truncate w-full">{img.name}</p>
+                    <p className="text-[9px] text-gray-400">{(img.storagePath ?? '').split('.').pop()?.toUpperCase()}</p>
+                  </a>
+                  <button
+                    onClick={() => onImageRemove(img.id)}
+                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >x</button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -364,17 +379,23 @@ function TaskDetail({ task, taskImages, onUpdate, onToggle, onDelete, onClose, o
       </div>
 
       {/* 이미지 전체보기 */}
-      {viewingIndex !== null && taskImages[viewingIndex] && (
-        <ImageViewer
-          images={taskImages.map(img => ({
-            id: img.id,
-            src: getStorageUrl(img.storagePath!),
-            name: img.name,
-          }))}
-          initialIndex={viewingIndex}
-          onClose={() => setViewingIndex(null)}
-        />
-      )}
+      {viewingIndex !== null && (() => {
+        const imageFiles = taskImages.filter(img => /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(img.storagePath ?? ''));
+        const clickedImg = taskImages[viewingIndex];
+        const imageIdx = imageFiles.findIndex(img => img.id === clickedImg?.id);
+        if (imageIdx < 0) return null;
+        return (
+          <ImageViewer
+            images={imageFiles.map(img => ({
+              id: img.id,
+              src: getStorageUrl(img.storagePath!),
+              name: img.name,
+            }))}
+            initialIndex={imageIdx}
+            onClose={() => setViewingIndex(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
