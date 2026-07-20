@@ -232,7 +232,7 @@ function TaskDetail({ task, taskImages, onUpdate, onToggle, onDelete, onClose, o
             onBlur={() => saveField('description')}
             onKeyDown={e => { if (e.key === 'Escape') setEditingField(null); }}
             placeholder="설명을 입력하세요 (마크다운: **굵게**, - 목록)"
-            rows={5}
+            rows={10}
             className="w-full text-sm text-gray-600 border border-blue-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-200 resize-y font-mono leading-relaxed"
             autoFocus
           />
