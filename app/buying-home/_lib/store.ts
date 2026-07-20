@@ -133,7 +133,11 @@ export async function uploadToStorage(file: File, path: string): Promise<string 
     cacheControl: '3600',
     upsert: false,
   });
-  if (error) return null;
+  if (error) {
+    console.error('Storage upload error:', error.message);
+    alert(`업로드 실패: ${error.message}`);
+    return null;
+  }
   const { data } = supabase.storage.from('gallery').getPublicUrl(path);
   return data.publicUrl;
 }
