@@ -38,17 +38,13 @@ function MarkdownText({ text }: { text: string }) {
 }
 
 function renderInline(text: string): React.ReactNode[] {
-  // **bold**, *italic*, [link](url) 처리
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
 
   while (remaining.length > 0) {
-    // Bold
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-    // Italic
     const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
-    // Link
     const linkMatch = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/);
 
     const matches = [
@@ -85,12 +81,12 @@ function renderInline(text: string): React.ReactNode[] {
   return parts;
 }
 
-function TaskForm({ task, onSave, onCancel }: {
-  task?: Task;
+// 새 할 일 추가용 폼 (간소화)
+function TaskAddForm({ onSave, onCancel }: {
   onSave: (t: Task) => void;
   onCancel: () => void;
 }) {
-  const [form, setForm] = useState<Task>(task ?? {
+  const [form, setForm] = useState<Task>({
     id: generateId(), category: 'contract', title: '', description: '', deadline: '', completed: false,
   });
   return (
@@ -109,61 +105,151 @@ function TaskForm({ task, onSave, onCancel }: {
       </div>
       <div>
         <label className="block text-xs text-gray-500 mb-1">제목</label>
-        <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="할 일 제목" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">설명 (마크다운 지원: **굵게**, *기울임*, - 목록, [링크](URL))</label>
-        <textarea value={form.description ?? ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="상세 설명을 입력하세요&#10;줄바꿈이 그대로 적용됩니다" rows={5} className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-y font-mono" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">예상 비용 (만원)</label>
-          <input type="number" value={form.estimatedCost ?? ''} onChange={e => setForm({ ...form, estimatedCost: e.target.value ? Number(e.target.value) : undefined })} placeholder="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">실제 비용 (만원)</label>
-          <input type="number" value={form.actualCost ?? ''} onChange={e => setForm({ ...form, actualCost: e.target.value ? Number(e.target.value) : undefined })} placeholder="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
-        </div>
+        <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="할 일 제목" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" autoFocus />
       </div>
       <div className="flex gap-2 justify-end">
         <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">취소</button>
         <button onClick={() => form.title && form.deadline && onSave(form)} className="px-4 py-2 text-sm bg-gray-900 text-white rounded hover:bg-gray-800 disabled:opacity-50" disabled={!form.title || !form.deadline}>
-          {task ? '수정' : '추가'}
+          추가
         </button>
       </div>
     </div>
   );
 }
 
-function TaskDetail({ task, taskImages, onToggle, onEdit, onDelete, onClose, onImageUpload, onImageRemove }: {
+// 인라인 편집 가능한 상세 뷰
+function TaskDetail({ task, taskImages, onUpdate, onToggle, onDelete, onClose, onImageUpload, onImageRemove }: {
   task: Task;
   taskImages: GalleryImage[];
+  onUpdate: (updates: Partial<Task>) => void;
   onToggle: () => void;
-  onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
   onImageUpload: (files: FileList) => void;
   onImageRemove: (imageId: string) => void;
 }) {
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editDesc, setEditDesc] = useState(task.description ?? '');
+  const [editDeadline, setEditDeadline] = useState(task.deadline);
+  const [editEstCost, setEditEstCost] = useState(task.estimatedCost?.toString() ?? '');
+  const [editActCost, setEditActCost] = useState(task.actualCost?.toString() ?? '');
+
   const days = daysUntil(task.deadline);
   const overdue = isOverdue(task.deadline) && !task.completed;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewingImage, setViewingImage] = useState<GalleryImage | null>(null);
 
+  // task가 바뀌면 편집 상태 리셋
+  useEffect(() => {
+    setEditTitle(task.title);
+    setEditDesc(task.description ?? '');
+    setEditDeadline(task.deadline);
+    setEditEstCost(task.estimatedCost?.toString() ?? '');
+    setEditActCost(task.actualCost?.toString() ?? '');
+    setEditingField(null);
+  }, [task.id, task.title, task.description, task.deadline, task.estimatedCost, task.actualCost]);
+
+  const saveField = (field: string) => {
+    setEditingField(null);
+    switch (field) {
+      case 'title':
+        if (editTitle.trim() && editTitle !== task.title) onUpdate({ title: editTitle.trim() });
+        else setEditTitle(task.title);
+        break;
+      case 'description':
+        if (editDesc !== (task.description ?? '')) onUpdate({ description: editDesc || undefined });
+        break;
+      case 'deadline':
+        if (editDeadline && editDeadline !== task.deadline) onUpdate({ deadline: editDeadline });
+        else setEditDeadline(task.deadline);
+        break;
+      case 'estimatedCost': {
+        const val = editEstCost ? Number(editEstCost) : undefined;
+        if (val !== task.estimatedCost) onUpdate({ estimatedCost: val });
+        break;
+      }
+      case 'actualCost': {
+        const val = editActCost ? Number(editActCost) : undefined;
+        if (val !== task.actualCost) onUpdate({ actualCost: val });
+        break;
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, field: string) => {
+    if (e.key === 'Enter' && field !== 'description') saveField(field);
+    if (e.key === 'Escape') { setEditingField(null); }
+  };
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {/* 카테고리 + 닫기 */}
       <div className="flex items-start justify-between">
-        <span className={`text-xs px-2.5 py-1 rounded-full ${CATEGORY_COLORS[task.category]}`}>{CATEGORY_LABELS[task.category]}</span>
+        {editingField === 'category' ? (
+          <select
+            value={task.category}
+            onChange={e => { onUpdate({ category: e.target.value as TaskCategory }); setEditingField(null); }}
+            onBlur={() => setEditingField(null)}
+            className="text-xs px-2.5 py-1 rounded-full border border-gray-300 bg-white"
+            autoFocus
+          >
+            {ALL_CATEGORIES.map(cat => <option key={cat} value={cat}>{CATEGORY_LABELS[cat]}</option>)}
+          </select>
+        ) : (
+          <button onClick={() => setEditingField('category')} className={`text-xs px-2.5 py-1 rounded-full hover:ring-2 hover:ring-gray-300 transition ${CATEGORY_COLORS[task.category]}`}>
+            {CATEGORY_LABELS[task.category]}
+          </button>
+        )}
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none md:hidden">x</button>
       </div>
-      <div>
-        <h2 className={`text-xl font-bold ${task.completed ? 'line-through text-gray-400' : 'text-gray-900'}`}>{task.title}</h2>
-        {task.description && (
-          <div className="mt-3">
+
+      {/* 제목 - 인라인 편집 */}
+      {editingField === 'title' ? (
+        <input
+          value={editTitle}
+          onChange={e => setEditTitle(e.target.value)}
+          onBlur={() => saveField('title')}
+          onKeyDown={e => handleKeyDown(e, 'title')}
+          className="text-xl font-bold text-gray-900 w-full border-b-2 border-blue-500 outline-none bg-transparent py-1"
+          autoFocus
+        />
+      ) : (
+        <h2
+          onClick={() => setEditingField('title')}
+          className={`text-xl font-bold cursor-text rounded px-1 -mx-1 py-0.5 hover:bg-gray-50 transition ${task.completed ? 'line-through text-gray-400' : 'text-gray-900'}`}
+        >
+          {task.title}
+        </h2>
+      )}
+
+      {/* 설명 - 인라인 편집 */}
+      {editingField === 'description' ? (
+        <div>
+          <textarea
+            value={editDesc}
+            onChange={e => setEditDesc(e.target.value)}
+            onBlur={() => saveField('description')}
+            onKeyDown={e => { if (e.key === 'Escape') setEditingField(null); }}
+            placeholder="설명을 입력하세요 (마크다운: **굵게**, - 목록)"
+            rows={5}
+            className="w-full text-sm text-gray-600 border border-blue-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-200 resize-y font-mono leading-relaxed"
+            autoFocus
+          />
+          <p className="text-[10px] text-gray-400 mt-1">Esc로 닫기 / 마크다운: **굵게**, *기울임*, - 목록, [링크](URL)</p>
+        </div>
+      ) : (
+        <div
+          onClick={() => setEditingField('description')}
+          className="cursor-text rounded-lg px-2 -mx-2 py-2 hover:bg-gray-50 transition min-h-[40px]"
+        >
+          {task.description ? (
             <MarkdownText text={task.description} />
-          </div>
-        )}
-      </div>
+          ) : (
+            <p className="text-sm text-gray-300 italic">설명을 추가하세요...</p>
+          )}
+        </div>
+      )}
 
       {/* 첨부 이미지 */}
       <div>
@@ -187,40 +273,93 @@ function TaskDetail({ task, taskImages, onToggle, onEdit, onDelete, onClose, onI
         )}
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+      {/* 속성들 - 인라인 편집 */}
+      <div className="space-y-1 border-t border-gray-100 pt-3">
+        {/* 상태 */}
+        <div className="flex items-center justify-between py-2 px-2 -mx-2 rounded hover:bg-gray-50">
           <span className="text-sm text-gray-500">상태</span>
           <button onClick={onToggle} className={`text-sm font-medium px-3 py-1 rounded-full ${task.completed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
             {task.completed ? '완료' : '미완료'}
           </button>
         </div>
-        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+
+        {/* 데드라인 */}
+        <div className="flex items-center justify-between py-2 px-2 -mx-2 rounded hover:bg-gray-50">
           <span className="text-sm text-gray-500">데드라인</span>
-          <span className={`text-sm font-medium ${overdue ? 'text-red-600' : 'text-gray-900'}`}>
-            {formatDateFull(task.deadline)}
-            {!task.completed && (
-              <span className={`ml-2 text-xs ${overdue ? 'text-red-500' : days <= 7 ? 'text-amber-500' : 'text-gray-400'}`}>
-                {overdue ? `${Math.abs(days)}일 지남` : days === 0 ? '오늘' : `D-${days}`}
-              </span>
-            )}
-          </span>
+          {editingField === 'deadline' ? (
+            <input
+              type="date"
+              value={editDeadline}
+              onChange={e => setEditDeadline(e.target.value)}
+              onBlur={() => saveField('deadline')}
+              onKeyDown={e => handleKeyDown(e, 'deadline')}
+              className="text-sm border border-blue-300 rounded px-2 py-1 outline-none"
+              autoFocus
+            />
+          ) : (
+            <button onClick={() => setEditingField('deadline')} className={`text-sm font-medium hover:underline ${overdue ? 'text-red-600' : 'text-gray-900'}`}>
+              {formatDateFull(task.deadline)}
+              {!task.completed && (
+                <span className={`ml-2 text-xs ${overdue ? 'text-red-500' : days <= 7 ? 'text-amber-500' : 'text-gray-400'}`}>
+                  {overdue ? `${Math.abs(days)}일 지남` : days === 0 ? '오늘' : `D-${days}`}
+                </span>
+              )}
+            </button>
+          )}
         </div>
-        {task.estimatedCost != null && (
-          <div className="flex items-center justify-between py-2 border-b border-gray-100">
-            <span className="text-sm text-gray-500">예상 비용</span>
-            <span className="text-sm font-medium text-gray-900">{formatMoneyWon(task.estimatedCost)}</span>
-          </div>
-        )}
-        {task.actualCost != null && (
-          <div className="flex items-center justify-between py-2 border-b border-gray-100">
-            <span className="text-sm text-gray-500">실제 비용</span>
-            <span className="text-sm font-medium text-gray-900">{formatMoneyWon(task.actualCost)}</span>
-          </div>
-        )}
+
+        {/* 예상 비용 */}
+        <div className="flex items-center justify-between py-2 px-2 -mx-2 rounded hover:bg-gray-50">
+          <span className="text-sm text-gray-500">예상 비용</span>
+          {editingField === 'estimatedCost' ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={editEstCost}
+                onChange={e => setEditEstCost(e.target.value)}
+                onBlur={() => saveField('estimatedCost')}
+                onKeyDown={e => handleKeyDown(e, 'estimatedCost')}
+                placeholder="0"
+                className="text-sm text-right border border-blue-300 rounded px-2 py-1 w-24 outline-none"
+                autoFocus
+              />
+              <span className="text-xs text-gray-400">만원</span>
+            </div>
+          ) : (
+            <button onClick={() => setEditingField('estimatedCost')} className="text-sm font-medium text-gray-900 hover:underline">
+              {task.estimatedCost != null ? formatMoneyWon(task.estimatedCost) : <span className="text-gray-300">-</span>}
+            </button>
+          )}
+        </div>
+
+        {/* 실제 비용 */}
+        <div className="flex items-center justify-between py-2 px-2 -mx-2 rounded hover:bg-gray-50">
+          <span className="text-sm text-gray-500">실제 비용</span>
+          {editingField === 'actualCost' ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={editActCost}
+                onChange={e => setEditActCost(e.target.value)}
+                onBlur={() => saveField('actualCost')}
+                onKeyDown={e => handleKeyDown(e, 'actualCost')}
+                placeholder="0"
+                className="text-sm text-right border border-blue-300 rounded px-2 py-1 w-24 outline-none"
+                autoFocus
+              />
+              <span className="text-xs text-gray-400">만원</span>
+            </div>
+          ) : (
+            <button onClick={() => setEditingField('actualCost')} className="text-sm font-medium text-gray-900 hover:underline">
+              {task.actualCost != null ? formatMoneyWon(task.actualCost) : <span className="text-gray-300">-</span>}
+            </button>
+          )}
+        </div>
       </div>
-      <div className="flex gap-2 pt-2">
-        <button onClick={onEdit} className="flex-1 px-4 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">수정</button>
-        <button onClick={onDelete} className="px-4 py-2.5 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50">삭제</button>
+
+      {/* 삭제 버튼 */}
+      <div className="pt-2 border-t border-gray-100">
+        <button onClick={onDelete} className="text-xs text-gray-400 hover:text-red-500 transition-colors">이 할 일 삭제</button>
       </div>
 
       {/* 이미지 전체보기 모달 */}
@@ -244,7 +383,6 @@ export default function TasksPage() {
   const { data: galleryImages, upsertItem: upsertGalleryImage, removeItem: removeGalleryImage } = useSupabaseTable<GalleryImage>('gallery_images', 'created_at');
   const [activeCategory, setActiveCategory] = useState<TaskCategory | 'all'>('all');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
   // URL에서 taskId 파라미터 읽어서 자동 선택
@@ -272,10 +410,14 @@ export default function TasksPage() {
     if (task) await updateItem(id, { completed: !task.completed });
   };
 
-  const saveTask = async (t: Task) => {
+  const addTask = async (t: Task) => {
     await upsertItem(t);
-    setEditingId(null);
     setShowAddForm(false);
+    setSelectedTaskId(t.id);
+  };
+
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    await updateItem(id, updates);
   };
 
   const deleteTask = async (id: string) => {
@@ -321,8 +463,8 @@ export default function TasksPage() {
   const detailProps = selectedTask ? {
     task: selectedTask,
     taskImages: getTaskImages(selectedTask.id),
+    onUpdate: (updates: Partial<Task>) => updateTask(selectedTask.id, updates),
     onToggle: () => toggleComplete(selectedTask.id),
-    onEdit: () => { setEditingId(selectedTask.id); setSelectedTaskId(null); },
     onDelete: () => deleteTask(selectedTask.id),
     onClose: () => setSelectedTaskId(null),
     onImageUpload: (files: FileList) => handleImageUpload(files, selectedTask.id),
@@ -333,7 +475,7 @@ export default function TasksPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">할 일 관리</h1>
-        <button onClick={() => { setShowAddForm(true); setEditingId(null); setSelectedTaskId(null); }} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800">+ 추가</button>
+        <button onClick={() => { setShowAddForm(true); setSelectedTaskId(null); }} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800">+ 추가</button>
       </div>
 
       <div className="flex gap-1 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
@@ -347,18 +489,17 @@ export default function TasksPage() {
         ))}
       </div>
 
-      {showAddForm && <TaskForm onSave={saveTask} onCancel={() => setShowAddForm(false)} />}
+      {showAddForm && <TaskAddForm onSave={addTask} onCancel={() => setShowAddForm(false)} />}
 
       <div className="flex gap-6">
         <div className={`w-full ${selectedTask ? 'hidden md:block md:w-2/5' : ''} space-y-2`}>
           {sortedTasks.map(task => {
-            if (editingId === task.id) return <TaskForm key={task.id} task={task} onSave={saveTask} onCancel={() => setEditingId(null)} />;
-            const days = daysUntil(task.deadline);
-            const overdue = isOverdue(task.deadline) && !task.completed;
+            const d = daysUntil(task.deadline);
+            const od = isOverdue(task.deadline) && !task.completed;
             const isSelected = selectedTaskId === task.id;
             return (
-              <div key={task.id} onClick={() => { setSelectedTaskId(task.id); setEditingId(null); setShowAddForm(false); }}
-                className={`border rounded-lg p-3 bg-white transition-all cursor-pointer ${isSelected ? 'border-gray-900 ring-1 ring-gray-900' : overdue ? 'border-red-200 bg-red-50/30' : 'border-gray-200 hover:border-gray-300'} ${task.completed ? 'opacity-60' : ''}`}>
+              <div key={task.id} onClick={() => { setSelectedTaskId(task.id); setShowAddForm(false); }}
+                className={`border rounded-lg p-3 bg-white transition-all cursor-pointer ${isSelected ? 'border-gray-900 ring-1 ring-gray-900' : od ? 'border-red-200 bg-red-50/30' : 'border-gray-200 hover:border-gray-300'} ${task.completed ? 'opacity-60' : ''}`}>
                 <div className="flex items-start gap-3">
                   <input type="checkbox" checked={task.completed} onChange={e => { e.stopPropagation(); toggleComplete(task.id); }} onClick={e => e.stopPropagation()} className="mt-1 h-4 w-4 rounded accent-gray-900" />
                   <div className="flex-1 min-w-0">
@@ -367,9 +508,9 @@ export default function TasksPage() {
                       <span className={`text-sm font-medium ${task.completed ? 'line-through text-gray-400' : 'text-gray-900'}`}>{task.title}</span>
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                      <span className={overdue ? 'text-red-600 font-semibold' : ''}>
+                      <span className={od ? 'text-red-600 font-semibold' : ''}>
                         {formatDateFull(task.deadline)}
-                        {!task.completed && (overdue ? ` (${Math.abs(days)}일 지남)` : days === 0 ? ' (오늘)' : ` (${days}일 남음)`)}
+                        {!task.completed && (od ? ` (${Math.abs(d)}일 지남)` : d === 0 ? ' (오늘)' : ` (${d}일 남음)`)}
                       </span>
                       {task.estimatedCost != null && <span>{formatMoneyWon(task.estimatedCost)}</span>}
                     </div>
