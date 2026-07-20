@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment, useCallback } from 'react';
 import { useSupabaseTable, uploadToStorage, deleteFromStorage, getStorageUrl } from '../_lib/store';
 import { CATEGORY_LABELS, CATEGORY_COLORS, type Task, type TaskCategory, type GalleryImage } from '../_lib/types';
+import ImageViewer from '../_components/ImageViewer';
 import { formatMoneyWon, formatDateFull, daysUntil, isOverdue, generateId } from '../_lib/utils';
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_LABELS) as TaskCategory[];
@@ -138,7 +139,7 @@ function TaskDetail({ task, taskImages, onUpdate, onToggle, onDelete, onClose, o
   const days = daysUntil(task.deadline);
   const overdue = isOverdue(task.deadline) && !task.completed;
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [viewingImage, setViewingImage] = useState<GalleryImage | null>(null);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
 
   // task가 바뀌면 편집 상태 리셋
   useEffect(() => {
@@ -261,7 +262,7 @@ function TaskDetail({ task, taskImages, onUpdate, onToggle, onDelete, onClose, o
         {taskImages.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
             {taskImages.map(img => (
-              <div key={img.id} className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer" onClick={() => setViewingImage(img)}>
+              <div key={img.id} className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer" onClick={() => setViewingIndex(taskImages.indexOf(img))}>
                 <img src={getStorageUrl(img.storagePath!)} alt={img.name} className="w-full h-full object-cover" />
                 <button
                   onClick={e => { e.stopPropagation(); onImageRemove(img.id); }}
@@ -362,17 +363,17 @@ function TaskDetail({ task, taskImages, onUpdate, onToggle, onDelete, onClose, o
         <button onClick={onDelete} className="text-xs text-gray-400 hover:text-red-500 transition-colors">이 할 일 삭제</button>
       </div>
 
-      {/* 이미지 전체보기 모달 */}
-      {viewingImage && (
-        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" onClick={() => setViewingImage(null)}>
-          <div className="max-w-3xl w-full" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-white text-sm">{viewingImage.name}</span>
-              <button onClick={() => setViewingImage(null)} className="text-white/70 hover:text-white text-2xl">x</button>
-            </div>
-            <img src={getStorageUrl(viewingImage.storagePath!)} alt={viewingImage.name} className="w-full rounded-lg" />
-          </div>
-        </div>
+      {/* 이미지 전체보기 */}
+      {viewingIndex !== null && taskImages[viewingIndex] && (
+        <ImageViewer
+          images={taskImages.map(img => ({
+            id: img.id,
+            src: getStorageUrl(img.storagePath!),
+            name: img.name,
+          }))}
+          initialIndex={viewingIndex}
+          onClose={() => setViewingIndex(null)}
+        />
       )}
     </div>
   );

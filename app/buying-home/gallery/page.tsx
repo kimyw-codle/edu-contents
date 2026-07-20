@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import ImageViewer from '../_components/ImageViewer';
 import { useSupabaseTable, uploadToStorage, deleteFromStorage, getStorageUrl } from '../_lib/store';
 import { GALLERY_CATEGORIES, INTERIOR_SUBCATEGORIES, type GalleryImage } from '../_lib/types';
 import { formatDateFull, generateId } from '../_lib/utils';
@@ -34,7 +35,7 @@ export default function GalleryPage() {
   const { data: images, loaded, upsertItem, removeItem } = useSupabaseTable<GalleryImage>('gallery_images', 'created_at');
   const [activeCategory, setActiveCategory] = useState<string>('전체');
   const [activeSubCategory, setActiveSubCategory] = useState<string>('전체');
-  const [viewingImage, setViewingImage] = useState<GalleryImage | null>(null);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,12 +101,11 @@ export default function GalleryPage() {
     if (!confirm(`"${image.name}" 이미지를 삭제하시겠습니까?`)) return;
     if (image.storagePath) await deleteFromStorage(image.storagePath);
     await removeItem(image.id);
-    setViewingImage(null);
+    setViewingIndex(null);
   };
 
   const handleCategoryChange = async (image: GalleryImage, newCategory: string) => {
     await upsertItem({ ...image, category: newCategory });
-    setViewingImage({ ...image, category: newCategory });
   };
 
   const getImageSrc = (image: GalleryImage): string => {
@@ -152,8 +152,8 @@ export default function GalleryPage() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredImages.map(image => (
-          <div key={image.id} onClick={() => setViewingImage(image)}
+        {filteredImages.map((image, idx) => (
+          <div key={image.id} onClick={() => setViewingIndex(idx)}
             className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-gray-400 transition-colors">
             <img src={getImageSrc(image)} alt={image.name} className="w-full h-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -167,31 +167,34 @@ export default function GalleryPage() {
         )}
       </div>
 
-      {viewingImage && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setViewingImage(null)}>
-          <div className="max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-white font-medium">{viewingImage.name}</h3>
-                <p className="text-white/50 text-sm">{getCategoryDisplay(viewingImage.category)} / {formatDateFull(viewingImage.uploadDate)}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <select value={viewingImage.category}
-                  onChange={e => handleCategoryChange(viewingImage, e.target.value)}
-                  className="text-sm bg-white/10 text-white border border-white/20 rounded px-2 py-1">
+      {viewingIndex !== null && filteredImages[viewingIndex] && (
+        <ImageViewer
+          images={filteredImages.map(img => ({
+            id: img.id,
+            src: getImageSrc(img),
+            name: img.name,
+            subtitle: `${getCategoryDisplay(img.category)} / ${formatDateFull(img.uploadDate)}`,
+          }))}
+          initialIndex={viewingIndex}
+          onClose={() => setViewingIndex(null)}
+          toolbar={(index) => {
+            const img = filteredImages[index];
+            return (
+              <>
+                <select
+                  value={img.category}
+                  onChange={e => handleCategoryChange(img, e.target.value)}
+                  className="text-xs bg-white/10 text-white border border-white/20 rounded px-2 py-1"
+                >
                   {allCategoryOptions.map(cat => (
                     <option key={cat} value={cat} className="text-black">{cat}</option>
                   ))}
                 </select>
-                <button onClick={() => handleDelete(viewingImage)} className="text-sm text-red-400 hover:text-red-300">삭제</button>
-                <button onClick={() => setViewingImage(null)} className="text-white/70 hover:text-white text-2xl leading-none">x</button>
-              </div>
-            </div>
-            <div className="overflow-auto rounded-lg">
-              <img src={getImageSrc(viewingImage)} alt={viewingImage.name} className="w-full rounded-lg" />
-            </div>
-          </div>
-        </div>
+                <button onClick={() => handleDelete(img)} className="text-xs text-red-400 hover:text-red-300">삭제</button>
+              </>
+            );
+          }}
+        />
       )}
     </div>
   );
