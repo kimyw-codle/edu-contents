@@ -14,6 +14,7 @@ export default function BudgetPage() {
   const { data: fundSources, upsertItem: upsertFund, updateItem: updateFund, removeItem: removeFund, reorderItems: reorderFunds } = useSupabaseTable<FundSource>('fund_sources', 'sort_order');
   const [editingExpense, setEditingExpense] = useState<string | null>(null);
   const [editingFund, setEditingFund] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
   const dragItem = useRef<{ type: string; index: number } | null>(null);
   const dragOverItem = useRef<{ type: string; index: number } | null>(null);
 
@@ -52,6 +53,25 @@ export default function BudgetPage() {
     }
     dragItem.current = null;
     dragOverItem.current = null;
+  };
+
+  const startEditExpense = (id: string, currentName: string) => {
+    setEditName(currentName);
+    setEditingExpense(id);
+  };
+  const saveExpenseName = (id: string) => {
+    const trimmed = editName.trim() || '새 항목';
+    updateExpense(id, { item: trimmed });
+    setEditingExpense(null);
+  };
+  const startEditFund = (id: string, currentName: string) => {
+    setEditName(currentName);
+    setEditingFund(id);
+  };
+  const saveFundName = (id: string) => {
+    const trimmed = editName.trim() || '새 항목';
+    updateFund(id, { source: trimmed });
+    setEditingFund(null);
   };
 
   const addExpense = async () => {
@@ -105,9 +125,9 @@ export default function BudgetPage() {
                   <td className="py-3"><DragHandle /></td>
                   <td className="py-3">
                     {editingExpense === exp.id ? (
-                      <input value={exp.item} onChange={e => updateExpense(exp.id, { item: e.target.value })} onBlur={() => setEditingExpense(null)} onKeyDown={e => e.key === 'Enter' && setEditingExpense(null)} className="border border-gray-300 rounded px-2 py-1 text-sm w-full" autoFocus />
+                      <input value={editName} onChange={e => setEditName(e.target.value)} onBlur={() => saveExpenseName(exp.id)} onKeyDown={e => e.key === 'Enter' && saveExpenseName(exp.id)} className="border border-gray-300 rounded px-2 py-1 text-sm w-full" autoFocus />
                     ) : (
-                      <span onClick={() => setEditingExpense(exp.id)} className="cursor-pointer hover:text-blue-600">{exp.item}</span>
+                      <span onClick={() => startEditExpense(exp.id, exp.item)} className="cursor-pointer hover:text-blue-600">{exp.item || <span className="text-gray-300 italic">이름 입력</span>}</span>
                     )}
                   </td>
                   <td className="py-3 text-right">
@@ -140,9 +160,9 @@ export default function BudgetPage() {
             <div key={exp.id} className="border border-gray-100 rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
                 {editingExpense === exp.id ? (
-                  <input value={exp.item} onChange={e => updateExpense(exp.id, { item: e.target.value })} onBlur={() => setEditingExpense(null)} onKeyDown={e => e.key === 'Enter' && setEditingExpense(null)} className="border border-gray-300 rounded px-2 py-1 text-sm flex-1 mr-2" autoFocus />
+                  <input value={editName} onChange={e => setEditName(e.target.value)} onBlur={() => saveExpenseName(exp.id)} onKeyDown={e => e.key === 'Enter' && saveExpenseName(exp.id)} className="border border-gray-300 rounded px-2 py-1 text-sm flex-1 mr-2" autoFocus />
                 ) : (
-                  <span onClick={() => setEditingExpense(exp.id)} className="text-sm font-medium text-gray-800">{exp.item}</span>
+                  <span onClick={() => startEditExpense(exp.id, exp.item)} className="text-sm font-medium text-gray-800">{exp.item || <span className="text-gray-300 italic">이름 입력</span>}</span>
                 )}
                 <button onClick={() => removeExpense(exp.id)} className="text-xs text-gray-300 hover:text-red-500 ml-2">삭제</button>
               </div>
@@ -203,9 +223,9 @@ export default function BudgetPage() {
                     <td className="py-3"><DragHandle /></td>
                     <td className="py-3">
                       {editingFund === fund.id ? (
-                        <input value={fund.source} onChange={e => updateFund(fund.id, { source: e.target.value })} onBlur={() => setEditingFund(null)} onKeyDown={e => e.key === 'Enter' && setEditingFund(null)} className="border border-gray-300 rounded px-2 py-1 text-sm w-full" autoFocus />
+                        <input value={editName} onChange={e => setEditName(e.target.value)} onBlur={() => saveFundName(fund.id)} onKeyDown={e => e.key === 'Enter' && saveFundName(fund.id)} className="border border-gray-300 rounded px-2 py-1 text-sm w-full" autoFocus />
                       ) : (
-                        <span onClick={() => setEditingFund(fund.id)} className="cursor-pointer hover:text-blue-600">{fund.source}</span>
+                        <span onClick={() => startEditFund(fund.id, fund.source)} className="cursor-pointer hover:text-blue-600">{fund.source || <span className="text-gray-300 italic">이름 입력</span>}</span>
                       )}
                     </td>
                     <td className="py-3 text-right">
@@ -231,9 +251,9 @@ export default function BudgetPage() {
               <div key={fund.id} className="border border-gray-100 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   {editingFund === fund.id ? (
-                    <input value={fund.source} onChange={e => updateFund(fund.id, { source: e.target.value })} onBlur={() => setEditingFund(null)} onKeyDown={e => e.key === 'Enter' && setEditingFund(null)} className="border border-gray-300 rounded px-2 py-1 text-sm flex-1 mr-2" autoFocus />
+                    <input value={editName} onChange={e => setEditName(e.target.value)} onBlur={() => saveFundName(fund.id)} onKeyDown={e => e.key === 'Enter' && saveFundName(fund.id)} className="border border-gray-300 rounded px-2 py-1 text-sm flex-1 mr-2" autoFocus />
                   ) : (
-                    <span onClick={() => setEditingFund(fund.id)} className="text-sm font-medium text-gray-800">{fund.source}</span>
+                    <span onClick={() => startEditFund(fund.id, fund.source)} className="text-sm font-medium text-gray-800">{fund.source || <span className="text-gray-300 italic">이름 입력</span>}</span>
                   )}
                   <button onClick={() => removeFund(fund.id)} className="text-xs text-gray-300 hover:text-red-500 ml-2">삭제</button>
                 </div>
